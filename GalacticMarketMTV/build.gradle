@@ -1,0 +1,61 @@
+apply plugin: 'java-library'
+
+apply plugin: "org.sonarqube"
+
+apply from: "$rootDir/libraries.gradle"
+
+allprojects  {
+  	group = 'ec.com.galactic.market'
+	version = "$galacticMarketVersion"
+}
+
+repositories {
+    jcenter()
+}
+
+subprojects {
+
+  apply plugin: 'java'
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+  configurations {
+  	compile.exclude module: 'spring-asm'
+   		all {
+   			resolutionStrategy.eachDependency {  DependencyResolveDetails details ->
+   					def module = details.requested.group + ":" + details.requested.name
+					def overrideVersion = libraries[module]
+				
+					if (details.requested.version == null || details.requested.version.isEmpty()) {
+						throw new GradleException("$module artifact version cannot be null")
+					}
+				
+					if (overrideVersion != null && !overrideVersion.isEmpty()) {
+						details.useVersion overrideVersion
+					}
+			} 
+	   	}
+	}
+}
+
+dependencies {
+    // This dependency is exported to consumers, that is to say found on their compile classpath.
+    api group: 'org.apache.commons', name: 'commons-math3', version: libraries['org.apache.commons:commons-math3']
+
+    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    implementation group: 'com.google.guava', name: 'guava', version: libraries['com.google.guava:guava']
+
+    // Use JUnit test framework
+    testImplementation group: 'junit', name: 'junit', version: libraries['junit:junit']
+}
+
+buildscript {  
+	repositories {
+  		maven {
+  			url "https://plugins.gradle.org/m2/"
+  		}
+	}
+	dependencies {
+		classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2"
+  	}
+}
